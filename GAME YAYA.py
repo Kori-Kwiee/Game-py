@@ -13,16 +13,18 @@ player = {
     'money': 0,
     'day': 0,
     'steps': 0,
-    'turns': 20
+    'turns': 20,
+    'load': 0,
+    'space': 10,
+    'last_x': None,
+    'last_y': None
 }
 map_struct = []
 game_map = []
 fog = []
 pickaxe = ['1 (copper)']  # i needed a place to insert the pickaxe level
 pickaxe_level = 1
-space = 10
-load = 10  # also needed space to put bag load
-money = 0  # and the money
+
 
 MAP_WIDTH = 0
 MAP_HEIGHT = 0
@@ -132,7 +134,6 @@ def sell_minerals(player, prices):
             player[mineral] = 0  # reset player's mineral count after selling
         else:
             print(f"You have no {mineral} to sell.")
-
     player['money'] += total_earned
     print(f"Total GP earned: {total_earned}")
     print(f"Your total GP is now: {player['money']}")
@@ -232,10 +233,11 @@ def move_player(player, game_map, fog):
         if target_tile in ['C', 'S', 'G']:
             if can_mine(target_tile, pickaxe_level):  # check if can mine
                 mineral = mineral_names[target_tile]
-                min_pieces, max_pieces = pieces_obtained
+                min_pieces, max_pieces = pieces_obtained[mineral]
                 amtofore = randint(min_pieces, max_pieces)
                 if player["load"] < player["space"]:
                     player["load"] += amtofore
+                    player[mineral] += amtofore
                     print(f"You mined {amtofore} {mineral}")
 
                     game_map[new_y][new_x] = ' '  # Remove ore after mining
@@ -281,7 +283,7 @@ def game_loop():
 
 def money_counter():
     gp_gain = randint(*prices)
-    money += gp_gain
+    player['money'] += gp_gain
 
 
 def save_player_info():
@@ -289,17 +291,19 @@ def save_player_info():
         file.write(name + "\n")
         file.write(f"{player['x']},{player['y']}\n")
         file.write(str(pickaxe) + "\n")
-        file.write(str(load) + "\n")
-        file.write(str(space) + "\n")
-        file.write(str(money) + "\n")
-        file.write(str(steps) + "\n")
+        file.write(str(player['load']) + "\n")
+        file.write(str(player['space']) + "\n")
+        file.write(str(player['money']) + "\n")
+        file.write(str(player['steps']) + "\n")
+        file.write(str(player['turns']) + "\n")
+        file.write(str(player['day']) + "\n")
 
 
 # This loads the player information
 
 
 def load_player_info():
-    global name, player, pickaxe_level, load, space, money
+    global name, pickaxe_level
     try:
         with open("savefile.txt", "r") as file:
             name = file.readline().strip()
@@ -310,12 +314,15 @@ def load_player_info():
                 player['y'] = 0
                 player['x'] = int(pos_line[0])
                 player['y'] = int(pos_line[1])
-            pickaxe = file.readline().strip()
-            load = int(file.readline().strip())
-            space = int(file.readline().strip())
-            money = int(file.readline().strip())
-            steps = int(file.readline().strip())
-        return name, player, pickaxe, load, space, money, steps
+            pickaxe_str = file.readline().strip()
+            pickaxe.append(pickaxe_str)
+            player['load'] = int(file.readline().strip())
+            player['space'] = int(file.readline().strip())
+            player['money'] = int(file.readline().strip())
+            player['steps'] = int(file.readline().strip())
+            player['turns'] = int(file.readline().strip())
+            player['day'] = int(file.readline().strip())
+        return name, player, pickaxe
     except FileNotFoundError:
         print("No save file found.")  # so it doesnt crash if there isnt a file
         return None
@@ -459,15 +466,15 @@ day = 1
 while True:
     start_game()
     # display town menu PART 2
-
-    # load and steps reset
-    load = 0
     steps = 0
     exit_mine = False
-    # gold
     while True:
         print(f"\n--- Day {day} ---")
         show_town_menu()
+        if player['load'] != 0:
+            player['load'] = 0
+            print("Ore has been stored and player load has been set to 0")
+            player['steps'] = 0
         town_choice = input("Your choice? ").lower()
         print('')
 
@@ -500,13 +507,13 @@ while True:
                 else:
                     print("Pickaxe is already at maximum level.")
 
-                newstorage = space+2
+                newstorage = player['space']+2
 
                 print(
                     f"(B)ackpack upgrade to carry {newstorage} items for {newstorage*2} GP")  # idt theres a limit for the backpack so.. I didn't limit it
                 print("(L)eave shop")
                 print("-----------------------------------------------------------")
-                print(f"GP: {money}")
+                print(f"GP: {player['money']}")
                 print("-----------------------------------------------------------")
 
                 choice = input("Your choice? ").lower()
@@ -515,7 +522,7 @@ while True:
 
                 if choice == "m":
                     # cheat code for me to test... aha (easter egg~)
-                    money += 100
+                    player['money'] += 100
 
                 if choice == "p":
                     if pickaxe_level >= 3:
@@ -524,8 +531,8 @@ while True:
 
                     upgrade_cost = PICKAXE_LEVELS[pickaxe_level]["upgrade_cost"]
 
-                    if money >= upgrade_cost:
-                        money -= upgrade_cost
+                    if player['money'] >= upgrade_cost:
+                        player['money'] -= upgrade_cost
                         pickaxe_level += 1
                         new_mineral = PICKAXE_LEVELS[pickaxe_level]["minerals"][-1]
                         print(
@@ -534,11 +541,11 @@ while True:
                         print("Not enough GP for pickaxe upgrade.")
 
                 elif choice == "b":
-                    if money >= (newstorage*2):
-                        money -= (newstorage*2)
-                        space += 2
+                    if player['money'] >= (newstorage*2):
+                        player['money'] -= (newstorage*2)
+                        player['space'] += 2
                         print(
-                            f"Congratulations! Your bag can now carry {space}!")
+                            f"Congratulations! Your bag can now carry {player['space']}!")
                     else:
                         print("Not enough GP for bag upgrade.")
 
@@ -575,10 +582,10 @@ while True:
             print(f"Pickaxe level: {pickaxe_level}, {minable}")
             # pickaxe[0] so it doesnt show as ['1 copper'] <eg.
             print("------------------------------")
-            print(f"Load: {load}/{space}")
+            print(f"Load: {player['load']}/{player['space']}")
             print("------------------------------")
-            print(f"GP:{money}")
-            print(f"Steps taken: {steps}")
+            print(f"GP: {player['money']}")
+            print(f"Steps taken: {player['steps']}")
             print("------------------------------")
 
         # see the map
@@ -586,7 +593,7 @@ while True:
             initialize_game(game_map, fog, player)
             if game_map:
                 print(
-                    f"Map size: {len(game_map)} rows x {len(game_map[0])} cols")
+                    f"Map exploration progress:")
             else:
                 print("Game map is empty!")
 
@@ -608,6 +615,7 @@ while True:
                 draw_map(game_map, fog, player)
                 draw_view(game_map, fog, player)
                 result = move_player(player, game_map, fog)
+
                 if result == "fainted":
                     day += 1
                     break
