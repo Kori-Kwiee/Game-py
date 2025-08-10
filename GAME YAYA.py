@@ -193,7 +193,8 @@ def can_mine(ore_char, pickaxe_level):
 # This fuction moves the player
 
 def move_player(player, game_map, fog):
-    direction = input("Move (W/A/S/D)? Press Q to quit. ").lower()
+    print("*Funfact: You can always press I to check player Info!!")
+    direction = input("Move (W/A/S/D)? Press Q to quit.").lower()
     dx, dy = 0, 0
 
     if direction == 'w':
@@ -210,6 +211,10 @@ def move_player(player, game_map, fog):
 
     elif direction == 'q':
         return "quit"
+
+    elif direction == 'i':
+        return "i"
+
     else:
         print("Invalid input. Use W/A/S/D to move.")
         return
@@ -246,7 +251,7 @@ def move_player(player, game_map, fog):
             else:
                 print(
                     f"You cannot mine {mineral_names[target_tile]} yet. Upgrade your pickaxe!")
-                return  # to not step on ore tile if cannot mine
+                return
 
         player['x'] = new_x
         player['y'] = new_y
@@ -379,10 +384,11 @@ def load_game(game_map, fog, player):
                 fog.append([c == "1" for c in line])  # 1 = true 0 = false
 
         print("Game loaded!")
+        return True
 
     except FileNotFoundError:
         print("No save file found.")
-        return None, None, None
+        return False
     return
 
 
@@ -439,20 +445,19 @@ def start_game():
             break
         # when player wants to load game
         elif player_choice.lower() == 'l':
-            load_game(game_map, fog, player)
-            load_player_info()
-            if name == '':  # if name is None or empty string
+            loaded = load_game(game_map, fog, player)
+            if not loaded:  # load_game should return False if no file
                 print("Data not found, please create a new game.")
-
-            else:
+            if loaded:
+                load_player_info()
                 print(f"Welcome back, {name}")
                 break
+
     # when player wants to quit game
         elif player_choice.lower() == 'q':
             import sys  # google searched this..;w;
             print("Saving your progress...")
             save_game(game_map, fog, player)
-            print("Progress saved.")
             print("I hope you enjoyed your stay in Sundrop Town!")
             print("Good luck on finding your next job for retirement! :3")
             sys.exit()
@@ -558,7 +563,7 @@ while True:
         # sell ore
         elif town_choice == 's':
             if 'money' not in player:  # so error doesnt occur, money has value assigned
-                player['money'] = 0
+                player['money'] += 0
             selling = input(
                 "Are you sure you want to sell all your ore? Type 'Y' for yes to sell: ").lower()
             if selling == 'y':
@@ -580,7 +585,6 @@ while True:
             print(f"Name: {name}")
             print(f"Portal position: {player['x']},{player['y']}")
             print(f"Pickaxe level: {pickaxe_level}, {minable}")
-            # pickaxe[0] so it doesnt show as ['1 copper'] <eg.
             print("------------------------------")
             print(f"Load: {player['load']}/{player['space']}")
             print("------------------------------")
@@ -619,7 +623,21 @@ while True:
                 if result == "fainted":
                     day += 1
                     break
-                if result == "quit":
+                elif result == "quit":
                     day += 1
                     print("Exiting mine, returning to town menu...")
                     break
+                elif result == 'i':
+                    print("----- Player Information -----")
+                    print(f"Name: {name}")
+                    print(f"Portal position: {player['x']},{player['y']}")
+                    print(f"Pickaxe level: {pickaxe_level}, {minable}")
+                    print("------------------------------")
+                    print(f"Load: {player['load']}/{player['space']}")
+                    print("------------------------------")
+                    print(f"GP: {player['money']}")
+                    print(f"Steps taken: {player['steps']}")
+                    print("------------------------------")
+
+        else:
+            print("Invalid input, pleast try again.")
