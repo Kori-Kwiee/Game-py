@@ -181,20 +181,38 @@ def draw_view(game_map, fog, player):
         print(row)
     print("+---+")
 
-# This function checks if ore can be mined
 
+# This function checks if ore can be mined
 
 def can_mine(ore_char, pickaxe_level):
     ore_requirements = {'C': 1, 'S': 2, 'G': 3}
     required_level = ore_requirements.get(ore_char, 0)
     return pickaxe_level >= required_level
 
+# Teleportation
+
+
+def use_portal_stone(player):
+    if player['last_x'] is None and player['last_y'] is None:
+        # Save current mine position
+        player['last_x'] = player['x']
+        player['last_y'] = player['y']
+        # Teleport to town
+
+    else:
+        # Teleport back to saved mine position
+        player['x'] = player['last_x']
+        player['y'] = player['last_y']
+        player['last_x'] = None
+        player['last_y'] = None
 
 # This fuction moves the player
+
 
 def move_player(player, game_map, fog):
     print("*Funfact: You can always press I to check player Info!!")
     direction = input("Move (W/A/S/D)? Press Q to quit.").lower()
+    x, y = player['x'], player['y']
     dx, dy = 0, 0
 
     if direction == 'w':
@@ -210,6 +228,9 @@ def move_player(player, game_map, fog):
         dx = 1
 
     elif direction == 'q':
+        player['last_x'] = player['x']
+        player['last_y'] = player['y']
+        use_portal_stone(player)
         return "quit"
 
     elif direction == 'i':
@@ -262,6 +283,11 @@ def move_player(player, game_map, fog):
         print(f"You have {player['turns']} turns left.")
         if player['turns'] <= 0:
             print("You've fainted from exhaustion. Portal stone has been place and the rescue team brought you back to town.")
+            game_map[player['y']][player['x']] = 'P'
+            player['last_x'] = player['x']
+            player['last_y'] = player['y']
+            use_portal_stone(player)
+            player['turns'] = TURNS_PER_DAY
             return "fainted"
     else:
 
@@ -615,6 +641,13 @@ while True:
         # enter the mine
         elif town_choice == 'e':
             initialize_game(game_map, fog, player)
+            if player.get('last_cave_x') is not None and player.get('last_cave_y') is not None:
+                player['x'] = player['last_cave_x']
+                player['y'] = player['last_cave_y']
+            else:
+                # default start
+                player['x'], player['y'] = 1, 1
+
             while True:
                 draw_map(game_map, fog, player)
                 draw_view(game_map, fog, player)
@@ -625,9 +658,16 @@ while True:
                     break
                 elif result == "quit":
                     day += 1
-                    print("Exiting mine, returning to town menu...")
+                    print(
+                        "Placed portal stone... Exiting mine... returning to town menu...")
                     break
                 elif result == 'i':
+                    if pickaxe_level == 1:
+                        minable = 'copper'
+                    elif pickaxe_level == 2:
+                        minable = 'silver'
+                    elif pickaxe_level == 3:
+                        minable = 'gold'
                     print("----- Player Information -----")
                     print(f"Name: {name}")
                     print(f"Portal position: {player['x']},{player['y']}")
