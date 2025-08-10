@@ -11,7 +11,7 @@ player = {
     'silver': 0,
     'gold': 0,
     'money': 0,
-    'day': 0,
+    'day': 1,
     'steps': 0,
     'turns': 20,
     'load': 0,
@@ -101,12 +101,9 @@ def initialize_game(game_map, fog, player):
     player['copper'] = 0
     player['silver'] = 0
     player['gold'] = 0
-    player['money'] = 0
-    player['day'] = 0
-    player['steps'] = 0
+
     player['turns'] = TURNS_PER_DAY
     player['load'] = 0
-    player['space'] = 10
 
     clear_fog(fog, player)
 
@@ -216,7 +213,7 @@ def enter_mine(player, game_map, fog):
 
 def move_player(player, game_map, fog):
     print("*Funfact: You can always press I to check player Info!!")
-    direction = input("Move (W/A/S/D)? Press Q to quit.").lower()
+    direction = input("Move (W/A/S/D)? Press p to place portal stone.").lower()
     dx, dy = 0, 0
 
     if direction == 'w':
@@ -231,7 +228,7 @@ def move_player(player, game_map, fog):
     elif direction == 'd':
         dx = 1
 
-    elif direction == 'q':
+    elif direction == 'p':
         player['last_x'] = player['x']
         player['last_y'] = player['y']
         use_portal_stone(player)
@@ -495,7 +492,6 @@ def start_game():
 
 
 exit_mine = False  # just so exit_mine exists and the system doesnt crash-
-day = 1
 
 while True:
     start_game()
@@ -504,7 +500,7 @@ while True:
     steps = 0
     exit_mine = False
     while True:
-        print(f"\n--- Day {day} ---")
+        print(f"\n--- Day {player['day']} ---")
         show_town_menu()
         if player['load'] != 0:
             player['load'] = 0
@@ -651,12 +647,12 @@ while True:
                 if result == "fainted":
                     player['last_x'] = player['x']
                     player['last_y'] = player['y']
-                    day += 1
+                    player['day'] += 1
                     break
                 elif result == "quit":
                     player['last_x'] = player['x']
                     player['last_y'] = player['y']
-                    day += 1
+                    player['day'] += 1
                     print(
                         "Placed portal stone... Exiting mine... returning to town menu...")
                     break
@@ -677,6 +673,12 @@ while True:
                     print(f"GP: {player['money']}")
                     print(f"Steps taken: {player['steps']}")
                     print("------------------------------")
-
         else:
             print("Invalid input, pleast try again.")
+
+        if player['money'] > 500:
+            print(f'''------------------------------------------------------
+                Woo-hoo! Well done, {name}, you have {player['money']} GP!
+                You now have enough to retire and play video games every day.
+                And it only took you {player['day']} days and {player['steps']} steps! You win!
+                -------------------------------------------------------------''')
